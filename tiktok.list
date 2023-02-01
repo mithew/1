@@ -1,13 +1,3 @@
-DOMAIN-KEYWORD,tiktok
-DOMAIN-KEYWORD,frontier
-DOMAIN-KEYWORD,appsflyer
-DOMAIN-KEYWORD,mon.isnssdk
-DOMAIN-KEYWORD,isnssdk
-DOMAIN-KEYWORD,byte
-DOMAIN-KEYWORD,effectcdn
-DOMAIN-KEYWORD,clientai
-DOMAIN-KEYWORD,pitaya
-DOMAIN-KEYWORD,pkgcdn
 DOMAIN-KEYWORD,tiktokcdn-
 DOMAIN-SUFFIX,byteoversea.com
 DOMAIN-SUFFIX,ibytedtos.com
@@ -18,3 +8,10 @@ DOMAIN-SUFFIX,tik-tokapi.com
 DOMAIN-SUFFIX,tiktok.com
 DOMAIN-SUFFIX,tiktokcdn.com
 DOMAIN-SUFFIX,tiktokv.com
+DOMAIN-KEYWORD,ttvnw
+DOMAIN-SUFFIX,ext-twitch.tv
+DOMAIN-SUFFIX,jtvnw.net
+DOMAIN-SUFFIX,ttvnw.net
+DOMAIN-SUFFIX,twitch-ext.rootonline.de
+DOMAIN-SUFFIX,twitch.tv
+DOMAIN-SUFFIX,twitchcdn.net
