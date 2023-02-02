@@ -59,3 +59,16 @@ DOMAIN-SUFFIX,twitterkr.com
 DOMAIN-SUFFIX,twittermail.com
 DOMAIN-SUFFIX,twitterrific.com
 DOMAIN-SUFFIX,twittertim.es
+######
+DOMAIN-SUFFIX,github.com
+DOMAIN-SUFFIX,github.io
+DOMAIN-SUFFIX,githubapp.com
+DOMAIN-SUFFIX,githubassets.com
+DOMAIN-SUFFIX,githubusercontent.com
+DOMAIN-KEYWORD,github
+DOMAIN-SUFFIX,rawgithub.com
+DOMAIN-SUFFIX,github.blog
+DOMAIN-SUFFIX,github.com
+DOMAIN-SUFFIX,github.io
+DOMAIN-SUFFIX,githubassets.com
+DOMAIN-SUFFIX,githubusercontent.com
