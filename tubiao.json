@@ -8,6 +8,15 @@
     "isEnabled": true,
     "isEnabledAll": false
   },
+  {
+  "appName": "航旅纵横",
+  "packageName": "com.umetrip.android.msky.app",
+  "iconBitmap": "iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAAAXNSR0IArs4c6QAAAARzQklUCAgICHwIZIgAAAL2SURBVGiB7ZhNiBRHGIafWgVBVNwlBFQURSV/CyJ6SBBkRVEUBTUqIeTgIZhLogiCiIfNKYJnEcwxIIKgBwV/UBCEgIIH0VX04CWIhl0vJuAhl8fD1MS2HXument3ZqBfKLq7qr73e9/66ekaqFGjRhFCSmfV5AQhtMyh3gJGquACGEjU1bOojfQaaiO9htpIr6Gvjai/qtfVpX3/gxg1Xe73Gdkbb3f0rRF1PvB987kvjairgavAzlj1eypBMgq4bpXhUo+p/2Sqr6izWiU4ETv82WtG1Jst6j4FmJkjvwjsio9nO5qm6cXG3PPKEMI4ZIy0GL05U61qEngErAshvG5WDACoV1p0Pqiumi5lCTgRQhjOmgBAHSlYkxPqbuNmKrGmW+4R9UvL7ZGvP+Zu5scaIj4BLgB/qTfTBu5/0duAz4CvgGFgJTCUQPEAOB1CONMu0ZoyIz3FeKP+oW6OGveptzsZtSNdlf0Ol9Sf1aXqgHpIHWs2djR/NmbmThfEX1N/VBdHHQvU4+qzfMci/e99Taqzgf3ApljmdjQKneM/YCyWO8CFEMK4OgRszZSWe6jo76DCz3h1BFiSK4M0DM6J17nADOA1MAG8ylxfAW+Ah8BYCOFphnsI+Bb4AVhfpGPSRqYS7ZZKKxQZaff67QjqAmARsDB3XRRC2FJFjnZIMqL+RkNktgymJlXnpca0Q1eOuuom4EYVXE1062C1tmrCbhkZrpow1ci/k00YXwwbSoROFDWmGnlZQkAeP9F4SaTiUVFjqpEXqdnV5Zn7EWA0lSPicVFjqpEyx9/NmfvxEvFNXJ1E7PtQl5X4KHyiDmY4zpfguFSZiYyQYyWEjGbiV6t/J8Zvr9xIFDNawszhTPxsdbzDuL1FWqowc7CEmf05jqJlNjHlJjJCflFfJpo5qg5kOA6o93J9bqtrpsVERsgK9ZT6PMHMXXVPjucb9bD6nY0DXhIqPY/Y+J34PJYv4nVJQcg54GQI4X6VOmrUqPEh3gK0HUzGOkCsyQAAAABJRU5ErkJggg==",
+  "iconColor": "#ff64ac32",
+  "contributorName": "fankes",
+  "isEnabled": true,
+  "isEnabledAll": false
+  },
    {
     "appName": "网易邮箱",
     "packageName": "com.netease.mobimail",
