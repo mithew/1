@@ -47,3 +47,15 @@ DOMAIN-KEYWORD,tic-cdn
 DOMAIN-KEYWORD,strpst
 DOMAIN-KEYWORD,gravatar
 DOMAIN-KEYWORD,cdnjs
+######
+DOMAIN-KEYWORD,twitter
+DOMAIN-SUFFIX,twitter.com
+DOMAIN-SUFFIX,twitter.jp
+DOMAIN-SUFFIX,twitter4j.org
+DOMAIN-SUFFIX,twittercounter.com
+DOMAIN-SUFFIX,twitterfeed.com
+DOMAIN-SUFFIX,twittergadget.com
+DOMAIN-SUFFIX,twitterkr.com
+DOMAIN-SUFFIX,twittermail.com
+DOMAIN-SUFFIX,twitterrific.com
+DOMAIN-SUFFIX,twittertim.es
