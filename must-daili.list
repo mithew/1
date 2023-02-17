@@ -1,5 +1,5 @@
 #DOMAIN-KEYWORD,twitter
 #DOMAIN-SUFFIX,twitter.com
 
-DOMAIN-KEYWORD,openai
-DOMAIN-KEYWORD,chatgpt
+#DOMAIN-KEYWORD,openai
+#DOMAIN-KEYWORD,chatgpt
