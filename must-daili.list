@@ -3,36 +3,59 @@
 #DOMAIN-KEYWORD,openai
 #DOMAIN-KEYWORD,chatgpt
 
-DOMAIN-KEYWORD,gooXXXgle
-DOMAIN-KEYWORD,youXXXtube
+#人工智能
 DOMAIN-KEYWORD,apiaiai
 DOMAIN-KEYWORD,ohmygpt.
-DOMAIN-KEYWORD,Kamatera
+DOMAIN-KEYWORD,openai
 DOMAIN-KEYWORD,poe.com
+DOMAIN-KEYWORD,perple
+DOMAIN-KEYWORD,claude
+
+#网络服务
 DOMAIN-KEYWORD,hcaptcha
 DOMAIN-KEYWORD,cloudflare
-DOMAIN-KEYWORD,openai
 DOMAIN-KEYWORD,sentry.io
-DOMAIN-KEYWORD,perple
 DOMAIN-KEYWORD,onekey.so
 DOMAIN-KEYWORD,replit.
-DOMAIN-KEYWORD,claude
+DOMAIN-KEYWORD,immersive
+DOMAIN-KEYWORD,myheritage
+DOMAIN-KEYWORD,apk.support
+DOMAIN-KEYWORD,playstoreapi
+DOMAIN-KEYWORD,notion.so
+DOMAIN-KEYWORD,workers.dev
+DOMAIN-KEYWORD,vercel
+
+# VPS 机场 等等
+DOMAIN-KEYWORD,smartdragonvpn
+DOMAIN-KEYWORD,Kamatera
+
+# 365
 DOMAIN-KEYWORD,.365-
 DOMAIN-KEYWORD,.365push
 DOMAIN-KEYWORD,cache365.
 DOMAIN-KEYWORD,appsflyer.
+
+# 其他
 DOMAIN-KEYWORD,lihkg.
+
+# Bt 搜索
 DOMAIN-KEYWORD,solidtorrent
 DOMAIN-KEYWORD,btdig
 DOMAIN-KEYWORD,idope
 DOMAIN-KEYWORD,bt4g.org
 DOMAIN-KEYWORD,Magnet
 DOMAIN-KEYWORD,Torrent
-DOMAIN-KEYWORD,immersive
-DOMAIN-KEYWORD,myheritage
-DOMAIN-KEYWORD,apk.support
-DOMAIN-KEYWORD,playstoreapi
-DOMAIN-KEYWORD,smartdragonvpn
-DOMAIN-KEYWORD,notion.so
-DOMAIN-KEYWORD,workers.dev
-DOMAIN-KEYWORD,vercel
+
+###### GitHub
+DOMAIN-SUFFIX,github.com
+DOMAIN-SUFFIX,github.io
+DOMAIN-SUFFIX,githubapp.com
+DOMAIN-SUFFIX,githubassets.com
+DOMAIN-SUFFIX,githubusercontent.com
+DOMAIN-KEYWORD,github
+DOMAIN-SUFFIX,rawgithub.com
+DOMAIN-SUFFIX,github.blog
+DOMAIN-SUFFIX,github.com
+DOMAIN-SUFFIX,github.io
+DOMAIN-SUFFIX,githubassets.com
+DOMAIN-SUFFIX,githubusercontent.com
