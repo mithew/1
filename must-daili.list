@@ -41,6 +41,10 @@ DOMAIN-KEYWORD,appsflyer.
 DOMAIN-KEYWORD,lihkg.
 DOMAIN-KEYWORD,oaistatic
 DOMAIN-KEYWORD,oaiuser
+DOMAIN-KEYWORD,playstation.
+DOMAIN-KEYWORD,.playstation
+DOMAIN-KEYWORD,.sony
+DOMAIN-KEYWORD,sony.
 
 # Bt 搜索
 DOMAIN-KEYWORD,solidtorrent
