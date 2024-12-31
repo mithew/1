@@ -1,11 +1,8 @@
-
-
-
 import { TransformStream } from 'stream/web';
 
 // 从环境变量中获取配置
 const upstream = env.UPSTREAM || "raw.githubusercontent.com";
-const upstreamPath = env.UPSTREAM_PATH || "/xxx/2/main";
+const upstreamPath = env.UPSTREAM_PATH || "/mithew/2/main";
 const githubToken = env.GITHUB_TOKEN || "ghp_xxx";
 const upstreamMobile = env.UPSTREAM_MOBILE || upstream;
 const blockedRegion = env.BLOCKED_REGION ? env.BLOCKED_REGION.split(',') : [];
@@ -208,4 +205,3 @@ async function device_status(user_agent_info) {
   ];
   return !agents.some(agent => user_agent_info.includes(agent));
 }
-```
