@@ -1,12 +1,11 @@
+
 // Website you intended to retrieve for users.
 const upstream = "raw.githubusercontent.com";
 
 // Custom pathname for the upstream website.
-// (1) 填写代理的路径，格式为 /<用户>/<仓库名>/<分支>
 const upstream_path = "/mithew/2/main";
 
-// github personal access token.
-// (2) 填写github令牌
+// GitHub personal access token.
 const github_token = "ghp_xxx";
 
 // Website you intended to retrieve for users using mobile devices.
@@ -29,6 +28,20 @@ const replace_dict = {
   $upstream: "$custom_domain",
 };
 
+const ipRequestMap = new Map();
+
+const TIME_WINDOW = 60 * 1000; // 1分钟
+const REQUEST_LIMIT = 15; // 请求限制
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, { timestamp }] of ipRequestMap.entries()) {
+    if (now - timestamp > TIME_WINDOW) {
+      ipRequestMap.delete(ip); // ■ 清理过期记录
+    }
+  }
+}, TIME_WINDOW);
+
 addEventListener("fetch", (event) => {
   event.respondWith(fetchAndApply(event.request));
 });
@@ -37,6 +50,24 @@ async function fetchAndApply(request) {
   const region = request.headers.get("cf-ipcountry")?.toUpperCase();
   const ip_address = request.headers.get("cf-connecting-ip");
   const user_agent = request.headers.get("user-agent");
+
+  // 检查 IP 请求频率
+  const now = Date.now();
+  const ipRecord = ipRequestMap.get(ip_address);
+
+  if (ipRecord) {
+    if (now - ipRecord.timestamp <= TIME_WINDOW && ipRecord.count >= REQUEST_LIMIT) {
+      return new Response("Too Many Requests: Please try again later.", {
+        status: 429, // ■ 返回 429 状态码
+      });
+    } else if (now - ipRecord.timestamp > TIME_WINDOW) {
+      ipRequestMap.set(ip_address, { count: 1, timestamp: now }); // ■ 重置计数器
+    } else {
+      ipRequestMap.set(ip_address, { count: ipRecord.count + 1, timestamp: now }); // ■ 增加计数器
+    }
+  } else {
+    ipRequestMap.set(ip_address, { count: 1, timestamp: now }); // ■ 初始化计数器
+  }
 
   let response = null;
   let url = new URL(request.url);
