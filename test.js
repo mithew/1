@@ -1,18 +1,23 @@
-const github_repo = typeof(GITHUB_REPO) != "undefined" ? GITHUB_REPO : 'mithew/url-duan';
-const github_version = typeof(GITHUB_VERSION) != "undefined" ? GITHUB_VERSION : '@main';
-const password = typeof(PASSWORD) != "undefined" ? PASSWORD : 'AoEiuV020 yes';
-const shorten_timeout = typeof(SHORTEN_TIMEOUT) != "undefined" ? SHORTEN_TIMEOUT.split("*").reduce((a, b) => parseInt(a) * parseInt(b), 1) : (1000 * 1 * 1);
-const default_len = typeof(DEFAULT_LEN) != "undefined" ? parseInt(DEFAULT_LEN) : 4;
-const demo_mode = typeof(DEMO_MODE) != "undefined" ? DEMO_MODE === 'true' : false;
-const remove_completely = typeof(REMOVE_COMPLETELY) != "undefined" ? REMOVE_COMPLETELY === 'true' : true;
-const white_list = JSON.parse(typeof(WHITE_LIST) != "undefined" ? WHITE_LIST : `["020.name"]`);
-const demo_notice = typeof(DEMO_NOTICE) != "undefined" ? DEMO_NOTICE : ` `;
 
-const html404 = `<!DOCTYPE html>
-<body>
-  <h1>404 Not Found.</h1>
-  <p>The url you visit is not found.</p>
-</body>`;
+// 请求频率限制配置
+const RATE_LIMIT_WINDOW = 120000; // 时间窗口限制：2分钟（单位：毫秒）
+const RATE_LIMIT_MAX_REQUESTS = 20; // 在时间窗口内允许的最大请求数量
+
+// 初始化常量
+const github_repo = typeof(GITHUB_REPO) != "undefined" ? GITHUB_REPO : 'mithew/url-duan'; // GitHub 仓库地址，默认值为 'mithew/url-duan'
+const github_version = typeof(GITHUB_VERSION) != "undefined" ? GITHUB_VERSION : '@main'; // GitHub 版本，默认值为 '@main'
+const password = typeof(PASSWORD) != "undefined" ? PASSWORD : 'AoEiuV020 yes'; // 管理员密码，默认值为 'AoEiuV020 yes'
+const shorten_timeout = typeof(SHORTEN_TIMEOUT) != "undefined" ? SHORTEN_TIMEOUT.split("*").reduce((a, b) => parseInt(a) * parseInt(b), 1) : (1000 * 1 * 1); // 短链接过期时间，默认值为 1000 毫秒（1 秒）
+const default_len = typeof(DEFAULT_LEN) != "undefined" ? parseInt(DEFAULT_LEN) : 4; // 默认短链接长度，默认值为 4
+const demo_mode = typeof(DEMO_MODE) != "undefined" ? DEMO_MODE === 'true' : false; // 是否启用演示模式，默认值为 false
+const remove_completely = typeof(REMOVE_COMPLETELY) != "undefined" ? REMOVE_COMPLETELY === 'true' : true; // 是否完全移除过期的短链接，默认值为 true
+const white_list = JSON.parse(typeof(WHITE_LIST) != "undefined" ? WHITE_LIST : `["020.name"]`); // 白名单域名列表，默认值为 ["020.name"]
+const demo_notice = typeof(DEMO_NOTICE) != "undefined" ? DEMO_NOTICE : ` `; // 演示模式下的通知信息，默认值为空字符串
+
+const html404 = `
+404 Not Found.
+The url you visit is not found.
+`;
 
 // 内存缓存
 const cache = new Map();
@@ -27,21 +32,6 @@ async function randomString(len) {
         result += $chars.charAt(Math.floor(Math.random() * maxPos));
     }
     return result;
-}
-
-// 检查URL合法性
-async function checkURL(url) {
-    let str = url;
-    let Expression = /^http(s)?:\/\/(.*@)?([\w-]+\.)*[\w-]+([_\-.,~!*:#()\w\/?%&=]*)?$/;
-    let objExp = new RegExp(Expression);
-    if (objExp.test(str) == true) {
-        if (str[0] == 'h')
-            return true;
-        else
-            return false;
-    } else {
-        return false;
-    }
 }
 
 // 检查白名单
@@ -122,7 +112,7 @@ async function load_url(key) {
         }
     }
     cache.set(key, url);
-    setTimeout(() => cache.delete(key), 1800000); // 缓存半小时
+    setTimeout(() => cache.delete(key), 60000); // 缓存1分钟
     return url;
 }
 
@@ -130,8 +120,8 @@ async function load_url(key) {
 function checkRequestRate(ip) {
     const now = Date.now();
     const requests = requestCounts.get(ip) || [];
-    const recentRequests = requests.filter(timestamp => now - timestamp < 120000); // 2分钟
-    if (recentRequests.length >= 20) {
+    const recentRequests = requests.filter(timestamp => now - timestamp < RATE_LIMIT_WINDOW);
+    if (recentRequests.length >= RATE_LIMIT_MAX_REQUESTS) {
         return false;
     }
     requestCounts.set(ip, [...recentRequests, now]);
@@ -155,8 +145,17 @@ async function handleRequest(request) {
         console.log("url " + req["url"]);
         let admin = await checkHash(req["url"], req["hash"]);
         console.log("admin " + admin);
-        if (!await checkURL(req["url"]) || (!admin && !demo_mode && !await checkWhite(new URL(req["url"]).host))) {
-            return new Response(`{"status":500,"key":": Error: Url illegal."}`, {
+        if (!admin && req["hash"]) {
+            return new Response(`{"status":401,"message":"Incorrect password"}`, {
+                headers: {
+                    "content-type": "text/html;charset=UTF-8",
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "POST",
+                },
+            });
+        }
+        if (!demo_mode && !await checkWhite(new URL(req["url"]).host)) {
+            return new Response(`{"status":500,"key":": Error: Url not allowed."}`, {
                 headers: {
                     "content-type": "text/html;charset=UTF-8",
                     "Access-Control-Allow-Origin": "*",
