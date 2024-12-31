@@ -1,39 +1,37 @@
-import { TransformStream } from 'stream/web';
-
 // 从环境变量中获取配置
-const upstream = env.UPSTREAM || "raw.githubusercontent.com";
-const upstreamPath = env.UPSTREAM_PATH || "/mithew/2/main";
-const githubToken = env.GITHUB_TOKEN || "ghp_xxx";
-const upstreamMobile = env.UPSTREAM_MOBILE || upstream;
-const blockedRegion = env.BLOCKED_REGION ? env.BLOCKED_REGION.split(',') : [];
-const blockedIpAddress = env.BLOCKED_IP_ADDRESS ? env.BLOCKED_IP_ADDRESS.split(',') : [];
-const https = env.HTTPS === 'true';
-const disableCache = env.DISABLE_CACHE === 'true';
-const replaceDict = {
-  $upstream: env.CUSTOM_DOMAIN || "$custom_domain",
-  $custom_domain: env.CUSTOM_DOMAIN || "$custom_domain",
-};
-
-// 请求频率限制配置
-const TIME_WINDOW = 120 * 1000; // 时间
-const REQUEST_LIMIT = 25; // 请求限制
-const ipRequestMap = new Map();
-
-// 定时清理过期的IP请求记录
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, { timestamp }] of ipRequestMap.entries()) {
-    if (now - timestamp > TIME_WINDOW) {
-      ipRequestMap.delete(ip);
-    }
-  }
-}, TIME_WINDOW);
-
 addEventListener("fetch", (event) => {
-  event.respondWith(fetchAndApply(event.request));
+  event.respondWith(fetchAndApply(event.request, event.env)); // ■ 将 env 作为参数传递给 fetchAndApply
 });
 
-async function fetchAndApply(request) {
+async function fetchAndApply(request, env) { // ■ 添加 env 参数
+  const upstream = env.UPSTREAM || "raw.githubusercontent.com"; // ■ 使用 env 对象访问环境变量
+  const upstreamPath = env.UPSTREAM_PATH || "/mithew/2/main"; // ■ 使用 env 对象访问环境变量
+  const githubToken = env.GITHUB_TOKEN || "ghp_xxx"; // ■ 使用 env 对象访问环境变量
+  const upstreamMobile = env.UPSTREAM_MOBILE || upstream; // ■ 使用 env 对象访问环境变量
+  const blockedRegion = env.BLOCKED_REGION ? env.BLOCKED_REGION.split(',') : []; // ■ 使用 env 对象访问环境变量
+  const blockedIpAddress = env.BLOCKED_IP_ADDRESS ? env.BLOCKED_IP_ADDRESS.split(',') : []; // ■ 使用 env 对象访问环境变量
+  const https = env.HTTPS === 'true'; // ■ 使用 env 对象访问环境变量
+  const disableCache = env.DISABLE_CACHE === 'true'; // ■ 使用 env 对象访问环境变量
+  const replaceDict = {
+    $upstream: env.CUSTOM_DOMAIN || "$custom_domain", // ■ 使用 env 对象访问环境变量
+    $custom_domain: env.CUSTOM_DOMAIN || "$custom_domain", // ■ 使用 env 对象访问环境变量
+  };
+
+  // 请求频率限制配置
+  const TIME_WINDOW = 120 * 1000; // 时间
+  const REQUEST_LIMIT = 25; // 请求限制
+  const ipRequestMap = new Map();
+
+  // 定时清理过期的IP请求记录
+  setInterval(() => {
+    const now = Date.now();
+    for (const [ip, { timestamp }] of ipRequestMap.entries()) {
+      if (now - timestamp > TIME_WINDOW) {
+        ipRequestMap.delete(ip);
+      }
+    }
+  }, TIME_WINDOW);
+
   const region = request.headers.get("cf-ipcountry")?.toUpperCase();
   const ip_address = request.headers.get("cf-connecting-ip");
   const user_agent = request.headers.get("user-agent");
