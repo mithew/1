@@ -1,16 +1,15 @@
 
 
-```javascript
-// 引入必要的模块
+
 import { TransformStream } from 'stream/web';
 
 // 从环境变量中获取配置
 const upstream = env.UPSTREAM || "raw.githubusercontent.com";
-const upstreamPath = env.UPSTREAM_PATH || "/mithew/2/main";
+const upstreamPath = env.UPSTREAM_PATH || "/xxx/2/main";
 const githubToken = env.GITHUB_TOKEN || "ghp_xxx";
 const upstreamMobile = env.UPSTREAM_MOBILE || upstream;
 const blockedRegion = env.BLOCKED_REGION ? env.BLOCKED_REGION.split(',') : [];
-const blockedIpAddress = env.BLOCKED_IP_ADDRESS ? env.BLOCKED_IP_ADDRESS.split(',') : ["0.0.0.0", "127.0.0.1"];
+const blockedIpAddress = env.BLOCKED_IP_ADDRESS ? env.BLOCKED_IP_ADDRESS.split(',') : [];
 const https = env.HTTPS === 'true';
 const disableCache = env.DISABLE_CACHE === 'true';
 const replaceDict = {
@@ -19,8 +18,8 @@ const replaceDict = {
 };
 
 // 请求频率限制配置
-const TIME_WINDOW = 60 * 1000; // 1分钟
-const REQUEST_LIMIT = 15; // 请求限制
+const TIME_WINDOW = 120 * 1000; // 时间
+const REQUEST_LIMIT = 25; // 请求限制
 const ipRequestMap = new Map();
 
 // 定时清理过期的IP请求记录
