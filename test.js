@@ -1,43 +1,34 @@
 
-// Website you intended to retrieve for users.
-const upstream = "raw.githubusercontent.com";
 
-// Custom pathname for the upstream website.
-const upstream_path = "/mithew/2/main";
+```javascript
+// 引入必要的模块
+import { TransformStream } from 'stream/web';
 
-// GitHub personal access token.
-const github_token = "ghp_xxx";
-
-// Website you intended to retrieve for users using mobile devices.
-const upstream_mobile = upstream;
-
-// Countries and regions where you wish to suspend your service.
-const blocked_region = [];
-
-// IP addresses which you wish to block from using your service.
-const blocked_ip_address = ["0.0.0.0", "127.0.0.1"];
-
-// Whether to use HTTPS protocol for upstream address.
-const https = true;
-
-// Whether to disable cache.
-const disable_cache = true;
-
-// Replace texts.
-const replace_dict = {
-  $upstream: "$custom_domain",
+// 从环境变量中获取配置
+const upstream = env.UPSTREAM || "raw.githubusercontent.com";
+const upstreamPath = env.UPSTREAM_PATH || "/mithew/2/main";
+const githubToken = env.GITHUB_TOKEN || "ghp_xxx";
+const upstreamMobile = env.UPSTREAM_MOBILE || upstream;
+const blockedRegion = env.BLOCKED_REGION ? env.BLOCKED_REGION.split(',') : [];
+const blockedIpAddress = env.BLOCKED_IP_ADDRESS ? env.BLOCKED_IP_ADDRESS.split(',') : ["0.0.0.0", "127.0.0.1"];
+const https = env.HTTPS === 'true';
+const disableCache = env.DISABLE_CACHE === 'true';
+const replaceDict = {
+  $upstream: env.CUSTOM_DOMAIN || "$custom_domain",
+  $custom_domain: env.CUSTOM_DOMAIN || "$custom_domain",
 };
 
-const ipRequestMap = new Map();
-
+// 请求频率限制配置
 const TIME_WINDOW = 60 * 1000; // 1分钟
 const REQUEST_LIMIT = 15; // 请求限制
+const ipRequestMap = new Map();
 
+// 定时清理过期的IP请求记录
 setInterval(() => {
   const now = Date.now();
   for (const [ip, { timestamp }] of ipRequestMap.entries()) {
     if (now - timestamp > TIME_WINDOW) {
-      ipRequestMap.delete(ip); // ■ 清理过期记录
+      ipRequestMap.delete(ip);
     }
   }
 }, TIME_WINDOW);
@@ -51,157 +42,164 @@ async function fetchAndApply(request) {
   const ip_address = request.headers.get("cf-connecting-ip");
   const user_agent = request.headers.get("user-agent");
 
-  // 检查 IP 请求频率
+  // 检查IP请求频率
   const now = Date.now();
   const ipRecord = ipRequestMap.get(ip_address);
 
   if (ipRecord) {
     if (now - ipRecord.timestamp <= TIME_WINDOW && ipRecord.count >= REQUEST_LIMIT) {
-      return new Response("Too Many Requests: Please try again later.", {
-        status: 429, // ■ 返回 429 状态码
-      });
+      return new Response("Too Many Requests: Please try again later.", { status: 429 });
     } else if (now - ipRecord.timestamp > TIME_WINDOW) {
-      ipRequestMap.set(ip_address, { count: 1, timestamp: now }); // ■ 重置计数器
+      ipRequestMap.set(ip_address, { count: 1, timestamp: now });
     } else {
-      ipRequestMap.set(ip_address, { count: ipRecord.count + 1, timestamp: now }); // ■ 增加计数器
+      ipRequestMap.set(ip_address, { count: ipRecord.count + 1, timestamp: now });
     }
   } else {
-    ipRequestMap.set(ip_address, { count: 1, timestamp: now }); // ■ 初始化计数器
+    ipRequestMap.set(ip_address, { count: 1, timestamp: now });
   }
 
-  let response = null;
-  let url = new URL(request.url);
-  let url_hostname = url.hostname;
+  // 访问控制检查
+  if (handleAccessControl(region, ip_address)) {
+    return new Response("Access denied: Your region or IP is blocked.", { status: 403 });
+  }
 
-  if (https == true) {
+  // 确定上游域名
+  const upstream_domain = await device_status(user_agent) ? upstream : upstreamMobile;
+
+  // 构建请求URL
+  let url = new URL(request.url);
+  if (https) {
     url.protocol = "https:";
   } else {
     url.protocol = "http:";
   }
-
-  if (await device_status(user_agent)) {
-    var upstream_domain = upstream;
-  } else {
-    var upstream_domain = upstream_mobile;
-  }
-
   url.host = upstream_domain;
-  if (url.pathname == "/") {
-    url.pathname = upstream_path;
+  if (url.pathname === "/") {
+    url.pathname = upstreamPath;
   } else {
-    url.pathname = upstream_path + url.pathname;
+    url.pathname = upstreamPath + url.pathname;
   }
 
-  if (blocked_region.includes(region)) {
-    response = new Response(
-      "Access denied: WorkersProxy is not available in your region yet.",
-      {
-        status: 403,
-      }
-    );
-  } else if (blocked_ip_address.includes(ip_address)) {
-    response = new Response(
-      "Access denied: Your IP address is blocked by WorkersProxy.",
-      {
-        status: 403,
-      }
-    );
-  } else {
-    let method = request.method;
-    let request_headers = request.headers;
-    let new_request_headers = new Headers(request_headers);
+  // 构建新的请求头
+  let new_request_headers = new Headers(request.headers);
+  new_request_headers.set("Host", upstream_domain);
+  new_request_headers.set("Referer", url.protocol + "//" + url.hostname);
+  new_request_headers.set("Authorization", `token ${githubToken}`);
 
-    new_request_headers.set("Host", upstream_domain);
-    new_request_headers.set("Referer", url.protocol + "//" + url_hostname);
-    new_request_headers.set("Authorization", "token " + github_token);
-
-    let original_response = await fetch(url.href, {
-      method: method,
-      headers: new_request_headers,
-      body: request.body,
-    });
-
-    connection_upgrade = new_request_headers.get("Upgrade");
-    if (connection_upgrade && connection_upgrade.toLowerCase() == "websocket") {
-      return original_response;
-    }
-
-    let original_response_clone = original_response.clone();
-    let original_text = null;
-    let response_headers = original_response.headers;
-    let new_response_headers = new Headers(response_headers);
-    let status = original_response.status;
-
-    if (disable_cache) {
-      new_response_headers.set("Cache-Control", "no-store");
-    } else {
-      new_response_headers.set("Cache-Control", "max-age=43200000");
-    }
-
-    new_response_headers.set("access-control-allow-origin", "*");
-    new_response_headers.set("access-control-allow-credentials", true);
-    new_response_headers.delete("content-security-policy");
-    new_response_headers.delete("content-security-policy-report-only");
-    new_response_headers.delete("clear-site-data");
-
-    if (new_response_headers.get("x-pjax-url")) {
-      new_response_headers.set(
-        "x-pjax-url",
-        response_headers
-          .get("x-pjax-url")
-          .replace("//" + upstream_domain, "//" + url_hostname)
-      );
-    }
-
-    const content_type = new_response_headers.get("content-type");
-    if (
-      content_type != null &&
-      content_type.includes("text/html") &&
-      content_type.includes("UTF-8")
-    ) {
-      original_text = await replace_response_text(
-        original_response_clone,
-        upstream_domain,
-        url_hostname
-      );
-    } else {
-      original_text = original_response_clone.body;
-    }
-
-    response = new Response(original_text, {
-      status,
-      headers: new_response_headers,
-    });
+  // 检查是否是WebSocket请求
+  const connection_upgrade = new_request_headers.get("Upgrade");
+  if (connection_upgrade && connection_upgrade.toLowerCase() === "websocket") {
+    return fetch(url.href, { method: request.method, headers: new_request_headers, body: request.body });
   }
+
+  // 发起原始请求
+  let original_response = await fetch(url.href, {
+    method: request.method,
+    headers: new_request_headers,
+    body: request.body,
+  });
+
+  // 处理响应
+  let response = modifyResponse(original_response, url.hostname, upstream_domain);
+
   return response;
 }
 
-async function replace_response_text(response, upstream_domain, host_name) {
-  let text = await response.text();
+function handleAccessControl(region, ip_address) {
+  if (blockedRegion.includes(region)) {
+    return true; // Blocked region
+  }
+  if (blockedIpAddress.includes(ip_address)) {
+    return true; // Blocked IP
+  }
+  return false;
+}
 
-  var i, j;
-  for (i in replace_dict) {
-    j = replace_dict[i];
-    if (i == "$upstream") {
-      i = upstream_domain;
-    } else if (i == "$custom_domain") {
-      i = host_name;
+function handleRateLimit(ip_address) {
+  const now = Date.now();
+  let ipRecord = ipRequestMap.get(ip_address);
+  if (ipRecord) {
+    if (now - ipRecord.timestamp <= TIME_WINDOW && ipRecord.count >= REQUEST_LIMIT) {
+      return true; // Too many requests
+    } else if (now - ipRecord.timestamp > TIME_WINDOW) {
+      ipRequestMap.set(ip_address, { count: 1, timestamp: now });
+    } else {
+      ipRequestMap.set(ip_address, { count: ipRecord.count + 1, timestamp: now });
+    }
+  } else {
+    ipRequestMap.set(ip_address, { count: 1, timestamp: now });
+  }
+  return false;
+}
+
+function modifyResponse(original_response, host_name, upstream_domain) {
+  let original_response_clone = original_response.clone();
+  let new_response_headers = new Headers(original_response.headers);
+  let status = original_response.status;
+
+  if (disableCache) {
+    new_response_headers.set("Cache-Control", "no-store");
+  } else {
+    new_response_headers.set("Cache-Control", "max-age=43200000");
+  }
+
+  new_response_headers.set("access-control-allow-origin", "*");
+  new_response_headers.set("access-control-allow-credentials", "true");
+  new_response_headers.delete("content-security-policy");
+  new_response_headers.delete("content-security-policy-report-only");
+  new_response_headers.delete("clear-site-data");
+
+  if (new_response_headers.get("x-pjax-url")) {
+    new_response_headers.set("x-pjax-url", original_response.headers.get("x-pjax-url").replace(`//${upstream_domain}`, `//${host_name}`));
+  }
+
+  const content_type = new_response_headers.get("content-type");
+  if (content_type && content_type.includes("text/html") && content_type.includes("UTF-8")) {
+    const textStream = original_response.body.pipeThrough(new TextDecoderStream());
+    const modifiedStream = textStream.pipeThrough(new TransformStream({
+      transform: (chunk, controller) => {
+        const modifiedChunk = replaceText(chunk, upstream_domain, host_name);
+        controller.enqueue(modifiedChunk);
+      }
+    }));
+    return new Response(modifiedStream, { status, headers: new_response_headers });
+  } else {
+    return new Response(original_response.body, { status, headers: new_response_headers });
+  }
+}
+
+const replaceRegexMap = new Map();
+
+function replaceText(text, upstream_domain, host_name) {
+  for (const [searchKey, replaceKey] of Object.entries(replaceDict)) {
+    let searchValue = searchKey;
+    let replaceValue = replaceKey;
+
+    if (searchKey === "$upstream") {
+      searchValue = upstream_domain;
+    } else if (searchKey === "$custom_domain") {
+      searchValue = host_name;
     }
 
-    if (j == "$upstream") {
-      j = upstream_domain;
-    } else if (j == "$custom_domain") {
-      j = host_name;
+    if (replaceKey === "$upstream") {
+      replaceValue = upstream_domain;
+    } else if (replaceKey === "$custom_domain") {
+      replaceValue = host_name;
     }
 
-    let re = new RegExp(i, "g");
-    text = text.replace(re, j);
+    let regex = replaceRegexMap.get(searchValue);
+    if (!regex) {
+      regex = new RegExp(searchValue, 'g');
+      replaceRegexMap.set(searchValue, regex);
+    }
+
+    text = text.replace(regex, replaceValue);
   }
   return text;
 }
 
 async function device_status(user_agent_info) {
-  var agents = [
+  const agents = [
     "Android",
     "iPhone",
     "SymbianOS",
@@ -209,12 +207,6 @@ async function device_status(user_agent_info) {
     "iPad",
     "iPod",
   ];
-  var flag = true;
-  for (var v = 0; v < agents.length; v++) {
-    if (user_agent_info.indexOf(agents[v]) > 0) {
-      flag = false;
-      break;
-    }
-  }
-  return flag;
+  return !agents.some(agent => user_agent_info.includes(agent));
 }
+```
