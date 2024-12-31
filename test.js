@@ -1,12 +1,9 @@
-// Website you intended to retrieve for users.
 const upstream = "raw.githubusercontent.com";
 
 // Custom pathname for the upstream website.
-// (1) 填写代理的路径，格式为 /<用户>/<仓库名>/<分支>
 const upstream_path = "/mithew/2/main";
 
 // github personal access token.
-// (2) 填写github令牌
 const github_token = "ghp_xxxxxxxxxxxxxxxxx";
 
 // Website you intended to retrieve for users using mobile devices.
