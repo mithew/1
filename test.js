@@ -1,276 +1,227 @@
-// config.js - 配置模块
-const CONFIG = {
-    github_repo: typeof(GITHUB_REPO)!="undefined" ? GITHUB_REPO : 'mithew/url-duan',
-    github_version: typeof(GITHUB_VERSION)!="undefined" ? GITHUB_VERSION : '@main',
-    password: typeof(PASSWORD)!="undefined" ? PASSWORD : 'AoEiuV020 yes',
-    shorten_timeout: typeof(SHORTEN_TIMEOUT)!="undefined" ? 
-        SHORTEN_TIMEOUT.split("*").reduce((a,b)=>parseInt(a)*parseInt(b),1) : (1000 * 1 * 1),
-    default_len: typeof(DEFAULT_LEN)!="undefined" ? parseInt(DEFAULT_LEN) : 4,
-    demo_mode: typeof(DEMO_MODE)!="undefined" ? DEMO_MODE === 'true' : false,
-    remove_completely: typeof(REMOVE_COMPLETELY)!="undefined" ? REMOVE_COMPLETELY === 'true' : true,
-    white_list: JSON.parse(typeof(WHITE_LIST)!="undefined" ? WHITE_LIST : '["020.name"]'),
-    demo_notice: typeof(DEMO_NOTICE)!="undefined" ? DEMO_NOTICE : ' ',
-    cache_ttl: 1800, // 缓存时间
-    rate_limit: {
-        requests: 25,     // 每个时间窗口允许的请求数
-        window: 120,       // 时间窗口（秒）
-        cleanup: 120       // 清理间隔（秒）
-    }
-};
+const github_repo = typeof(GITHUB_REPO) != "undefined" ? GITHUB_REPO : 'mithew/url-duan';
+const github_version = typeof(GITHUB_VERSION) != "undefined" ? GITHUB_VERSION : '@main';
+const password = typeof(PASSWORD) != "undefined" ? PASSWORD : 'AoEiuV020 yes';
+const shorten_timeout = typeof(SHORTEN_TIMEOUT) != "undefined" ? SHORTEN_TIMEOUT.split("*").reduce((a, b) => parseInt(a) * parseInt(b), 1) : (1000 * 1 * 1);
+const default_len = typeof(DEFAULT_LEN) != "undefined" ? parseInt(DEFAULT_LEN) : 4;
+const demo_mode = typeof(DEMO_MODE) != "undefined" ? DEMO_MODE === 'true' : false;
+const remove_completely = typeof(REMOVE_COMPLETELY) != "undefined" ? REMOVE_COMPLETELY === 'true' : true;
+const white_list = JSON.parse(typeof(WHITE_LIST) != "undefined" ? WHITE_LIST : `["020.name"]`);
+const demo_notice = typeof(DEMO_NOTICE) != "undefined" ? DEMO_NOTICE : ` `;
 
-// utils.js - 工具函数模块
-class Utils {
-    static async randomString(len) {
-        const chars = 'ABCDEFGHJKMNPQRSTWXYZabcdefhijkmnprstwxyz2345678';
-        let result = '';
-        for (let i = 0; i < len; i++) {
-            result += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return result;
-    }
+const html404 = `<!DOCTYPE html>
+<body>
+  <h1>404 Not Found.</h1>
+  <p>The url you visit is not found.</p>
+</body>`;
 
-    static async md5(message) {
-        const msgUint8 = new TextEncoder().encode(message);
-        const hashBuffer = await crypto.subtle.digest('MD5', msgUint8);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    }
+// 内存缓存
+const cache = new Map();
+const requestCounts = new Map();
 
-    static async checkURL(url) {
-        const urlRegex = /^http(s)?:\/\/(.*@)?([\w-]+\.)*[\w-]+([_\-.,~! *:#()\w\/?%&=]*)?$/;
-        return urlRegex.test(url) && url.startsWith('h');
+// 生成随机字符串
+async function randomString(len) {
+    let $chars = 'ABCDEFGHJKMNPQRSTWXYZabcdefhijkmnprstwxyz2345678';
+    let maxPos = $chars.length;
+    let result = '';
+    for (let i = 0; i < len; i++) {
+        result += $chars.charAt(Math.floor(Math.random() * maxPos));
     }
-
-    static async checkWhite(host) {
-        return CONFIG.white_list.some((h) => host === h || host.endsWith('.' + h));
-    }
+    return result;
 }
 
-// cache.js - 缓存管理模块
-class CacheManager {
-    static async get(key) {
-        const cacheKey = `url-shortener:${key}`;
-        const cache = caches.default;
-        const cachedResponse = await cache.match(new Request(cacheKey));
-        return cachedResponse ? await cachedResponse.text() : null;
-    }
-
-    static async set(key, value) {
-        const cacheKey = `url-shortener:${key}`;
-        const cache = caches.default;
-        const response = new Response(value, {
-            headers: {
-                'Cache-Control': `public, max-age=${CONFIG.cache_ttl}`
-            }
-        });
-        await cache.put(new Request(cacheKey), response);
-    }
-
-    static async delete(key) {
-        const cacheKey = `url-shortener:${key}`;
-        const cache = caches.default;
-        await cache.delete(new Request(cacheKey));
-    }
-}
-
-// rate-limiter.js - 基于内存的频率限制模块
-class RateLimiter {
-    static ipMap = new Map();
-    static cleanupInterval = CONFIG.rate_limit.cleanup * 1000;
-    static lastCleanup = Date.now();
-
-    static async cleanup(event) {
-        const now = Date.now();
-        if (now - this.lastCleanup < this.cleanupInterval) {
-            return;
-        }
-
-        event.waitUntil((async () => {
-            try {
-                const expiredTime = now - (CONFIG.rate_limit.window * 1000);
-                for (const [ip, data] of this.ipMap) {
-                    if (data.timestamp < expiredTime) {
-                        this.ipMap.delete(ip);
-                    }
-                }
-                this.lastCleanup = now;
-                console.log(`Cleaned up rate limit cache at ${new Date(now).toISOString()}`);
-            } catch (error) {
-                console.error('Rate limit cleanup error:', error);
-            }
-        })());
-    }
-
-    static async checkLimit(request, event) {
-        await this.cleanup(event);
-        const ip = request.headers.get('CF-Connecting-IP');
-        const now = Date.now();
-        
-        let ipData = this.ipMap.get(ip);
-        if (!ipData) {
-            ipData = { count: 1, timestamp: now };
-            this.ipMap.set(ip, ipData);
+// 检查URL合法性
+async function checkURL(url) {
+    let str = url;
+    let Expression = /^http(s)?:\/\/(.*@)?([\w-]+\.)*[\w-]+([_\-.,~!*:#()\w\/?%&=]*)?$/;
+    let objExp = new RegExp(Expression);
+    if (objExp.test(str) == true) {
+        if (str[0] == 'h')
             return true;
-        }
-
-        if (now - ipData.timestamp > CONFIG.rate_limit.window * 1000) {
-            ipData.count = 1;
-            ipData.timestamp = now;
-            return true;
-        }
-
-        if (ipData.count >= CONFIG.rate_limit.requests) {
+        else
             return false;
-        }
-
-        ipData.count++;
-        return true;
+    } else {
+        return false;
     }
 }
 
-// url-manager.js - URL管理模块
-class UrlManager {
-    static async save(url, key, admin, len = CONFIG.default_len) {
-        const override = admin && key;
-        if (!override) {
-            key = await Utils.randomString(len);
-        }
+// 检查白名单
+async function checkWhite(host) {
+    return white_list.some((h) => host == h || host.endsWith('.' + h));
+}
 
-        const exists = await this.load(key);
-        if (exists && !override) {
-            return this.save(url, key, admin, len + 1);
-        }
+// MD5加密
+async function md5(message) {
+    const msgUint8 = new TextEncoder().encode(message);
+    const hashBuffer = await crypto.subtle.digest('MD5', msgUint8);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return hashHex;
+}
 
-        const mode = admin ? 0 : 3;
-        const value = `${mode};${Date.now()};${url}`;
-
-        if (CONFIG.remove_completely && mode !== 0 && !await Utils.checkWhite(new URL(url).host)) {
-            const ttl = Math.max(60, CONFIG.shorten_timeout / 1000);
-            await LINKS.put(key, value, {expirationTtl: ttl});
-        } else {
-            await LINKS.put(key, value);
-        }
-
-        await CacheManager.delete(key);
-        return key;
+// 检查哈希值
+async function checkHash(url, hash) {
+    if (!hash) {
+        return false;
     }
+    return (await md5(url + password)) == hash;
+}
 
-    static async load(key) {
-        const cachedUrl = await CacheManager.get(key);
-        if (cachedUrl) return cachedUrl;
+// 保存URL
+async function save_url(url, key, admin, len) {
+    len = len || default_len;
+    const override = admin && key;
+    if (!override) {
+        key = await randomString(len);
+    }
+    const is_exists = await load_url(key);
+    console.log("key exists " + key + " " + is_exists);
+    if (override || !is_exists) {
+        var mode = 3;
+        if (admin) {
+            mode = 0;
+        }
+        let value = `${mode};${Date.now()};${url}`;
+        if (remove_completely && mode != 0 && !await checkWhite(new URL(url).host)) {
+            let ttl = Math.max(60, shorten_timeout / 1000);
+            console.log("key auto remove: " + key + ", " + ttl + "s");
+            return await LINKS.put(key, value, { expirationTtl: ttl }), key;
+        } else {
+            return await LINKS.put(key, value), key;
+        }
+    } else {
+        return await save_url(url, key, admin, len + 1);
+    }
+}
 
-        const value = await LINKS.get(key);
-        if (!value) return null;
-
-        const [mode, createTime, url] = value.split(';');
-        
-        if (mode !== '0' && CONFIG.shorten_timeout > 0 && 
-            Date.now() - parseInt(createTime) > CONFIG.shorten_timeout) {
+// 加载URL
+async function load_url(key) {
+    if (cache.has(key)) {
+        return cache.get(key);
+    }
+    const value = await LINKS.get(key);
+    if (!value) {
+        return null;
+    }
+    const list = value.split(';');
+    console.log("value split " + list);
+    var url;
+    if (list.length == 1) {
+        url = list[0];
+    } else {
+        url = list[2];
+        const mode = parseInt(list[0]);
+        const create_time = parseInt(list[1]);
+        if (mode != 0 && shorten_timeout > 0 && Date.now() - create_time > shorten_timeout) {
             const host = new URL(url).host;
-            if (!await Utils.checkWhite(host)) {
+            if (await checkWhite(host)) {
+                console.log('white list');
+            } else {
+                console.log("shorten timeout");
                 return null;
             }
         }
-
-        await CacheManager.set(key, url);
-        return url;
     }
+    cache.set(key, url);
+    setTimeout(() => cache.delete(key), 1800000); // 缓存半小时
+    return url;
 }
 
-// handler.js - 请求处理模块
-async function handleRequest(request, event) {
-    if (request.method === "POST") {
-        if (!await RateLimiter.checkLimit(request, event)) {
-            return new Response(JSON.stringify({
-                status: 429,
-                key: "Error: Too many requests"
-            }), {
-                headers: {
-                    "content-type": "application/json",
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Methods": "POST"
-                },
-                status: 429
-            });
-        }
+// 检查请求频率
+function checkRequestRate(ip) {
+    const now = Date.now();
+    const requests = requestCounts.get(ip) || [];
+    const recentRequests = requests.filter(timestamp => now - timestamp < 120000); // 2分钟
+    if (recentRequests.length >= 20) {
+        return false;
+    }
+    requestCounts.set(ip, [...recentRequests, now]);
+    return true;
+}
 
-        const req = await request.json();
-        const admin = await Utils.md5(req.url + CONFIG.password) === req.hash;
-
-        if (!await Utils.checkURL(req.url) || 
-            (!admin && !CONFIG.demo_mode && !await Utils.checkWhite(new URL(req.url).host))) {
-            return new Response(JSON.stringify({
-                status: 500,
-                key: "Error: Url illegal."
-            }), {
-                headers: {
-                    "content-type": "application/json",
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Methods": "POST"
-                }
-            });
-        }
-
-        try {
-            const key = await UrlManager.save(req.url, req.key, admin);
-            return new Response(JSON.stringify({
-                status: 200,
-                key: `/${key}`
-            }), {
-                headers: {
-                    "content-type": "application/json",
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Methods": "POST"
-                }
-            });
-        } catch (error) {
-            return new Response(JSON.stringify({
-                status: 500,
-                key: "Error: KV write limitation reached."
-            }), {
-                headers: {
-                    "content-type": "application/json",
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Methods": "POST"
-                }
-            });
-        }
+// 处理请求
+async function handleRequest(request) {
+    const ip = request.headers.get('cf-connecting-ip');
+    if (!checkRequestRate(ip)) {
+        return new Response(`{"status":429,"message":"Too many requests"}`, {
+            headers: {
+                "content-type": "text/html;charset=UTF-8",
+            },
+            status: 429
+        });
     }
 
-    if (request.method === "OPTIONS") {
-        return new Response("", {
+    if (request.method === "POST") {
+        let req = await request.json();
+        console.log("url " + req["url"]);
+        let admin = await checkHash(req["url"], req["hash"]);
+        console.log("admin " + admin);
+        if (!await checkURL(req["url"]) || (!admin && !demo_mode && !await checkWhite(new URL(req["url"]).host))) {
+            return new Response(`{"status":500,"key":": Error: Url illegal."}`, {
+                headers: {
+                    "content-type": "text/html;charset=UTF-8",
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "POST",
+                },
+            });
+        }
+        let stat, random_key = await save_url(req["url"], req["key"], admin);
+        console.log("stat " + stat);
+        if (typeof (stat) == "undefined") {
+            return new Response(`{"status":200,"key":"/` + random_key + `"}`, {
+                headers: {
+                    "content-type": "text/html;charset=UTF-8",
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "POST",
+                },
+            });
+        } else {
+            return new Response(`{"status":200,"key":": Error:Reach the KV write limitation."}`, {
+                headers: {
+                    "content-type": "text/html;charset=UTF-8",
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "POST",
+                },
+            });
+        }
+    } else if (request.method === "OPTIONS") {
+        return new Response(``, {
             headers: {
+                "content-type": "text/html;charset=UTF-8",
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Methods": "POST",
-                "Access-Control-Allow-Headers": "Content-Type"
-            }
+            },
         });
     }
 
-    const path = new URL(request.url).pathname.split("/")[1];
+    const requestURL = new URL(request.url);
+    const path = requestURL.pathname.split("/")[1];
+    console.log(path);
     if (!path) {
-        const html = await fetch(`https://dv.neee.win/dv/cdn.jsdelivr.net/gh/${CONFIG.github_repo}${CONFIG.github_version}/index.html`);
+        const html = await fetch(`https://dv.neee.win/dv/cdn.jsdelivr.net/gh/${github_repo}${github_version}/index.html`);
         const text = (await html.text())
-            .replaceAll("###GITHUB_REPO###", CONFIG.github_repo)
-            .replaceAll("###GITHUB_VERSION###", CONFIG.github_version)
-            .replaceAll("###DEMO_NOTICE###", CONFIG.demo_notice);
+            .replaceAll("###GITHUB_REPO###", github_repo)
+            .replaceAll("###GITHUB_VERSION###", github_version)
+            .replaceAll("###DEMO_NOTICE###", demo_notice);
+
         return new Response(text, {
-            headers: {"content-type": "text/html;charset=UTF-8"}
+            headers: {
+                "content-type": "text/html;charset=UTF-8",
+            },
         });
     }
-
-    const url = await UrlManager.load(path);
+    const url = await load_url(path);
     if (!url) {
-        return new Response(`<!DOCTYPE html><body><h1>404 Not Found.</h1><p>The url you visit is not found.</p></body>`, {
-            headers: {"content-type": "text/html;charset=UTF-8"},
+        console.log('not found');
+        return new Response(html404, {
+            headers: {
+                "content-type": "text/html;charset=UTF-8",
+            },
             status: 404
         });
     }
-
     return Response.redirect(url, 302);
 }
 
-// main.js - 主入口
 addEventListener("fetch", event => {
-    event.respondWith(handleRequest(event.request, event));
+  event.respondWith(handleRequest(event.request));
 });
