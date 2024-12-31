@@ -1,3 +1,4 @@
+
 // Github仓库地址，默认：'mithew/url-duan'
 const github_repo = typeof(GITHUB_REPO) != "undefined" ? GITHUB_REPO : 'mithew/url-duan';
 
@@ -31,8 +32,8 @@ const RATE_LIMIT_WINDOW = 120000;
 // 频率限制：允许的请求次数，默认：20次
 const RATE_LIMIT_COUNT = 20;
 
-// 缓存时间(毫秒)，默认：60000ms(1分钟)
-const CACHE_DURATION = 60000;
+// 缓存时间(毫秒)，默认：1800000ms(30分钟)
+const CACHE_DURATION = 1800000;
 
 const html404 = `<!DOCTYPE html>
 <body>
@@ -91,6 +92,10 @@ async function save_url(url, key, admin, len) {
             mode = 0;
         }
         let value = `${mode};${Date.now()};${url}`;
+        
+        // 清空缓存，确保数据一致性
+        cache.clear();
+        
         if (remove_completely && mode != 0 && !await checkWhite(new URL(url).host)) {
             let ttl = Math.max(60, shorten_timeout / 1000);
             console.log("key auto remove: " + key + ", " + ttl + "s");
@@ -160,14 +165,14 @@ async function handleRequest(request) {
     if (request.method === "POST") {
         let req = await request.json();
         console.log("url " + req["url"]);
-        
+
         try {
             let admin = await checkHash(req["url"], req["hash"]);
             console.log("admin " + admin);
-            
+
             let stat, random_key = await save_url(req["url"], req["key"], admin);
             console.log("stat " + stat);
-            
+
             if (typeof (stat) == "undefined") {
                 return new Response(`{"status":200,"key":"/` + random_key + `"}`, {
                     headers: {
